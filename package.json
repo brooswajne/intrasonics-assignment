@@ -17,7 +17,10 @@
 
 	"scripts": {
 		"lint": "eslint .",
-		"lint:fix": "eslint . --fix"
+		"lint:fix": "eslint . --fix",
+
+		"start": "node server.js",
+		"watch": "nodemon server.js"
 	},
 
 	"dependencies": {
@@ -30,6 +33,7 @@
 		"eslint-plugin-import": "^2.25.4",
 		"eslint-plugin-mocha": "^8.2.0",
 		"eslint-plugin-unicorn": "^28.0.2",
-		"express": "^4.17.2"
+		"express": "^4.17.2",
+		"nodemon": "^2.0.15"
 	}
 }
