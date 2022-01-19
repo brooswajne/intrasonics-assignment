@@ -1,0 +1,20 @@
+{
+  "name": "intrasonics-assignment",
+  "description": "Basic REST API serving data from a JSON file. Used as an interview assignment for Intrasonics.",
+  "author": "Willem Garnier <willem.garnier@gmail.com>",
+  "homepage": "https://github.com/brooswajne/intrasonics-assignment#readme",
+
+	"private": true,
+  "license": "Unlicense",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/brooswajne/intrasonics-assignment.git"
+  },
+  "bugs": {
+    "url": "https://github.com/brooswajne/intrasonics-assignment/issues"
+  },
+
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
