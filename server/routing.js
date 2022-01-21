@@ -51,10 +51,16 @@ function toExpressHandler(handler) {
 		.then(( ) => handler(req))
 		.then((response) => res.send(response))
 		.catch(function handleError(err) {
+			// TODO: use a logger instance per request
+			rootLogger.error(err);
+
 			const isHttpError = typeof err === "object"
 				&& err instanceof HttpError;
-			if (!isHttpError) next(err);
-			else res.status(err.status).send(err.message);
+			// handle the error now if it's an HttpError instance
+			if (isHttpError) res.status(err.status)
+				.send(err.response);
+			// otherwise fall back to the default express.js error handling
+			else next(err);
 		});
 }
 
