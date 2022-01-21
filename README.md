@@ -4,6 +4,17 @@ An Intrasonics interview assignment by Willem Garnier.
 
 ## Architecture Notes
 
+### Language
+
+I chose to build this application in JavaScript just due to being most familiar
+with the language, and therefore feeling I'd be most productive within the
+time-frame.
+
+If this were a real production service, I'd love to build it in a language like
+Go (or even better, Rust!), especially if I expect this API to be
+mission-critical and therefore needing both fast response times as well as
+excellent type-safety (to avoid runtime crashes).
+
 ### Type-Checking
 
 For the purpose of developing faster without having to mess with a TypeScript
