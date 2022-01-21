@@ -9,7 +9,7 @@ import {
 import { METHODS } from "http";
 import { readdir as fsReaddir } from "fs/promises";
 
-import { Router } from "express";
+import { Router as createRouter } from "express";
 
 import { logger as rootLogger } from "./logger.js";
 
@@ -25,10 +25,10 @@ const logger = rootLogger.child("routing");
  * To use route parameters, use square-brackets in the file's name, eg. a file
  * at path `/foo/[id].js` would register a route under `/foo/:id`.
  *
- * @param {string} root
+ * @param {string} directory
  *
  * @param {object} [options]
- * @param {(file) => Promise<any>} [options.importer]
+ * @param {(file: string) => Promise<any>} [options.importer]
  * An override for the mechanism to import a javascript file. Defaults to just
  * using an ES6 asynchronous import.
  * Useful for providing stubs in a testing context.
@@ -46,7 +46,7 @@ const logger = rootLogger.child("routing");
 export async function createFileBasedRouter(directory, {
 	importer = (file) => import(file),
 	readdir = fsReaddir,
-	router = new Router( ),
+	router = createRouter( ),
 } = { }) {
 	logger.debug(`Creating a file-based router using root: ${directory}`);
 
@@ -71,6 +71,8 @@ export async function createFileBasedRouter(directory, {
 			if (!isValidHandler) continue;
 
 			const expressMethodName = name.toLowerCase( );
+			// TODO: abstract isValidHttpMethod in a way that makes this type-safe
+			// @ts-expect-error -- doesn't know that expressMethodName isn't just any string
 			router[ expressMethodName ](`/${route}`, handler);
 			logger.trace(`Initialised route: ${name} ${route}`);
 		}

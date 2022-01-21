@@ -12,7 +12,7 @@ const DEFAULT_PORT = 3000;
 const DIR_HERE = dirname(import.meta.url.slice("file://".length));
 const DIR_ROOT = join(DIR_HERE, "../");
 
-/** The port which the server should be listening on. */
-export const PORT = process.env.IA_PORT || DEFAULT_PORT;
-/** The directory containing all routes. */
+/** @type {number} The port which the server should listen on. */
+export const PORT = Number(process.env.IA_PORT) || DEFAULT_PORT;
+/** @type {string} The directory containing all routes. */
 export const DIR_ROUTES = process.env.IA_ROUTES || join(DIR_ROOT, "routes");

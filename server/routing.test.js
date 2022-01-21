@@ -38,7 +38,10 @@ describe("server/routing.js", function fileSuite( ) {
 				}
 			});
 
-			await createFileBasedRouter("root", { readdir });
+			await createFileBasedRouter("root", {
+				// @ts-expect-error -- this is just a stub implementation
+				readdir,
+			});
 
 			expect(readdir).to.have.callCount(5);
 			const directoriesRead = readdir.getCalls( )
@@ -56,9 +59,15 @@ describe("server/routing.js", function fileSuite( ) {
 			const importer = fake.resolves({ });
 
 			await createFileBasedRouter("root", {
+				// @ts-expect-error -- this is just a stub implementation
 				readdir: fake.resolves([
+					// TODO: make a function to generate these without needing to tell
+					//       typescript to calm down each time
+					// @ts-expect-error -- this is just a stub implementation
 					{ name: "no-extension", isDirectory: ( ) => false },
+					// @ts-expect-error -- this is just a stub implementation
 					{ name: "javascript.js", isDirectory: ( ) => false },
+					// @ts-expect-error -- this is just a stub implementation
 					{ name: "not-js.dll", isDirectory: ( ) => false },
 				]),
 				importer: importer,
@@ -86,8 +95,10 @@ describe("server/routing.js", function fileSuite( ) {
 			};
 
 			await createFileBasedRouter("root", {
+				// @ts-expect-error -- this is just a stub implementation
 				readdir: fake.resolves([ { name: "file.js", isDirectory: ( ) => false } ]),
 				importer: importer,
+				// @ts-expect-error -- this is just a stub implementation
 				router: router,
 			});
 
@@ -103,10 +114,13 @@ describe("server/routing.js", function fileSuite( ) {
 			const router = { get: fake( ) };
 
 			await createFileBasedRouter("root", {
+				// @ts-expect-error -- this is just a stub implementation
 				readdir: fake.resolves([
+					// @ts-expect-error -- this is just a stub implementation
 					{ name: "/file/with/[param].js", isDirectory: ( ) => false },
 				]),
 				importer: fake.resolves({ GET: ( ) => ({ }) }),
+				// @ts-expect-error -- this is just a stub implementation
 				router: router,
 			});
 

@@ -4,6 +4,16 @@ An Intrasonics interview assignment by Willem Garnier.
 
 ## Architecture Notes
 
+### Type-Checking
+
+For the purpose of developing faster without having to mess with a TypeScript
+set-up and having to fix any potential issues with the compilation process, all
+files in this project are written in JavaScript.
+
+I still however want type-safety wherever I can, so am using TypeScript's [JSDoc
+support](https://www.typescriptlang.org/docs/handbook/jsdoc-supported-types.html)
+to type-check the JavaScript files.
+
 ### Routing
 
 I'm a big fan of file-based routing, similar to what modern front-end frameworks
