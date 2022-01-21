@@ -28,6 +28,10 @@ const logger = rootLogger.child("routing");
  * @param {string} root
  *
  * @param {object} [options]
+ * @param {(file) => Promise<any>} [options.importer]
+ * An override for the mechanism to import a javascript file. Defaults to just
+ * using an ES6 asynchronous import.
+ * Useful for providing stubs in a testing context.
  * @param {import("express").Router} [options.router]
  * The express router which routes should be registered to. If none is provided,
  * a new router instance will be created.
@@ -40,8 +44,9 @@ const logger = rootLogger.child("routing");
  * @returns {Promise<import("express").Router>}
  */
 export async function createFileBasedRouter(directory, {
-	router = new Router( ),
+	importer = (file) => import(file),
 	readdir = fsReaddir,
+	router = new Router( ),
 } = { }) {
 	logger.debug(`Creating a file-based router using root: ${directory}`);
 
@@ -56,7 +61,7 @@ export async function createFileBasedRouter(directory, {
 			.replace(/\.js$/, "");
 
 		// register any handlers we find for this file
-		const exported = await import(filepath);
+		const exported = await importer(filepath);
 		for (const name in exported) {
 			const isValidHttpMethod = METHODS.includes(name);
 			if (!isValidHttpMethod) continue;
@@ -66,7 +71,7 @@ export async function createFileBasedRouter(directory, {
 			if (!isValidHandler) continue;
 
 			const expressMethodName = name.toLowerCase( );
-			router[ expressMethodName ](route, handler);
+			router[ expressMethodName ](`/${route}`, handler);
 			logger.trace(`Initialised route: ${name} ${route}`);
 		}
 	}, { readdir });
@@ -91,7 +96,7 @@ export async function traverse(directory, visit, {
 	await Promise.all(entries.map(async function handleEntry(entry) {
 		const file = entry.name;
 		const path = join(directory, file);
-		if (entry.isDirectory( )) await traverse(path, visit);
+		if (entry.isDirectory( )) await traverse(path, visit, { readdir });
 		else await visit(path);
 	}));
 }
