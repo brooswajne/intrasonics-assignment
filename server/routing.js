@@ -11,9 +11,52 @@ import { readdir as fsReaddir } from "fs/promises";
 
 import { Router as createRouter } from "express";
 
+import { HttpError } from "./errors.js";
 import { logger as rootLogger } from "./logger.js";
 
 const logger = rootLogger.child("routing");
+
+/** @typedef {(req: import("express").Request) => Promise<any>} RequestHandler */
+
+/**
+ * Recursively traverses all files in the given directory, calling the provided
+ * `visit` callback for each file.
+ * @param {string} directory
+ * @param {(filepath: string) => Promise<void>} visit
+ * @param {object} [options]
+ * @param {import("fs/promises").readdir} [options.readdir]
+ * A custom implementation of `fs.readdir`.
+ * Useful for providing stubs in a testing context.
+ */
+async function traverse(directory, visit, {
+	readdir = fsReaddir,
+} = { }) {
+	const entries = await readdir(directory, { withFileTypes: true });
+	await Promise.all(entries.map(async function handleEntry(entry) {
+		const file = entry.name;
+		const path = join(directory, file);
+		if (entry.isDirectory( )) await traverse(path, visit, { readdir });
+		else await visit(path);
+	}));
+}
+
+/**
+ * Given a function which acts as a promise-based request handler, turns it
+ * into an express.js request handler.
+ * @param {RequestHandler} handler
+ * @returns {import("express").RequestHandler}
+ */
+function toExpressHandler(handler) {
+	return (req, res, next) => Promise.resolve( )
+		.then(( ) => handler(req))
+		.then((response) => res.send(response))
+		.catch(function handleError(err) {
+			const isHttpError = typeof err === "object"
+				&& err instanceof HttpError;
+			if (!isHttpError) next(err);
+			else res.status(err.status).send(err.message);
+		});
+}
 
 /**
  * Creates a new `express.Router` which uses simple folder-based routing for the
@@ -73,33 +116,10 @@ export async function createFileBasedRouter(directory, {
 			const expressMethodName = name.toLowerCase( );
 			// TODO: abstract isValidHttpMethod in a way that makes this type-safe
 			// @ts-expect-error -- doesn't know that expressMethodName isn't just any string
-			router[ expressMethodName ](`/${route}`, handler);
+			router[ expressMethodName ](`/${route}`, toExpressHandler(handler));
 			logger.trace(`Initialised route: ${name} ${route}`);
 		}
 	}, { readdir });
 
 	return router;
 }
-
-/**
- * Recursively traverses all files in the given directory, calling the provided
- * `visit` callback for each file.
- * @param {string} directory
- * @param {(filepath: string) => Promise<void>} visit
- * @param {object} [options]
- * @param {import("fs/promises").readdir} [options.readdir]
- * A custom implementation of `fs.readdir`.
- * Useful for providing stubs in a testing context.
- */
-export async function traverse(directory, visit, {
-	readdir = fsReaddir,
-} = { }) {
-	const entries = await readdir(directory, { withFileTypes: true });
-	await Promise.all(entries.map(async function handleEntry(entry) {
-		const file = entry.name;
-		const path = join(directory, file);
-		if (entry.isDirectory( )) await traverse(path, visit, { readdir });
-		else await visit(path);
-	}));
-}
-

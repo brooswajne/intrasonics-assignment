@@ -5,6 +5,7 @@ import {
 	PORT,
 } from "./server/config.js";
 import { createFileBasedRouter } from "./server/routing.js";
+import { defaultErrorHandler } from "./server/errors.js";
 import { logger } from "./server/logger.js";
 
 const app = express( );
@@ -16,6 +17,8 @@ app.use(router);
 app.get("/", function getGreeting(_, res) {
 	res.send("Hello world");
 });
+
+app.use(defaultErrorHandler);
 
 logger.debug("Starting application...");
 app.listen(PORT, function onceListening( ) {
