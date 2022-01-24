@@ -11,12 +11,24 @@ import { readdir as fsReaddir } from "fs/promises";
 
 import { Router as createRouter } from "express";
 
+import {
+	getChildLogger,
+	getChildLoggerFactory,
+} from "./logger.js";
 import { HttpError } from "./errors.js";
-import { logger as rootLogger } from "./logger.js";
 
-const logger = rootLogger.child("routing");
+const logger = getChildLogger("routing");
+const getRequestLogger = getChildLoggerFactory("request");
 
-/** @typedef {(req: import("express").Request) => Promise<any>} RequestHandler */
+/** @typedef {import("express").Request} Request */
+/**
+ * @typedef {object} RequestContext
+ * @property {import("./logger").LoggerChildInstance} logger
+ * The logger instance associated with this request.
+ * @property {number} timestamp
+ * The timestamp of the date at which this request was made.
+ */
+/** @typedef {(req: Request, context: RequestContext) => Promise<any>} RequestHandler */
 
 /**
  * Recursively traverses all files in the given directory, calling the provided
@@ -44,25 +56,47 @@ async function traverse(directory, visit, {
  * Given a function which acts as a promise-based request handler, turns it
  * into an express.js request handler.
  * @param {RequestHandler} handler
+ * @param {object} details
+ * @param {string} details.source
+ * The source location where this request handler has been defined, used for
+ * tracing and debugging issues.
  * @returns {import("express").RequestHandler}
  */
-function toExpressHandler(handler) {
-	return (req, res, next) => Promise.resolve( )
-		.then(( ) => handler(req))
-		.then((response) => res.send(response))
-		.catch(function handleError(err) {
-			// TODO: use a logger instance per request
-			rootLogger.error(err);
+const toExpressHandler = (handler, { source }) => function expressHandler(req, res, next) {
+	const logger = getRequestLogger( );
+	const timestamp = Date.now( );
 
-			const isHttpError = typeof err === "object"
-				&& err instanceof HttpError;
-			// handle the error now if it's an HttpError instance
-			if (isHttpError) res.status(err.status)
-				.send(err.response);
-			// otherwise fall back to the default express.js error handling
-			else next(err);
-		});
-}
+	logger.info(`${req.method} ${req.url}`);
+	res.on("finish", function onceResponded( ) {
+		const status = res.statusCode;
+		// @ts-expect-error -- _contentLength is an undocumented property
+		const size = res._contentLength ?? res.get("Content-Length") ?? null;
+		const duration = Date.now( ) - timestamp;
+		logger.info(`${req.method} ${req.url}: ${status} (${size} B) after ${duration}ms`);
+	});
+
+	// wrap the request handler call in Promise#then() to automatically catch
+	// any possible synchronous errors
+	return Promise.resolve( ).then(function invokeRequestHandler( ) {
+		logger.trace(`Using handler ${source}`);
+		return handler(req, { logger, timestamp });
+	}).then(function handleResponse(response) {
+		const duration = Date.now( ) - timestamp;
+		logger.trace(`Handler returned ${typeof response} after ${duration}ms`);
+		// TODO: support a way for the response to specify status code (other
+		//       than error responses)
+		// TODO: support streaming responses etc rather than always needing an
+		//       exact object to respond with
+		res.send(response);
+	}).catch(function handleError(err) {
+		logger.error(err);
+		const isHttpError = err instanceof HttpError;
+		// handle the error now if it's an HttpError instance
+		if (isHttpError) res.status(err.status).send(err.response);
+		// otherwise fall back to the default express.js error handling
+		else next(err);
+	});
+};
 
 /**
  * Creates a new `express.Router` which uses simple folder-based routing for the
@@ -115,14 +149,17 @@ export async function createFileBasedRouter(directory, {
 			const isValidHttpMethod = METHODS.includes(name);
 			if (!isValidHttpMethod) continue;
 
-			const handler = exported[ name ];
-			const isValidHandler = typeof handler === "function";
+			const value = exported[ name ];
+			const isValidHandler = typeof value === "function";
 			if (!isValidHandler) continue;
 
+			const expressHandler = toExpressHandler(value, {
+				source: `${filepath}:${name}()`,
+			});
 			const expressMethodName = name.toLowerCase( );
 			// TODO: abstract isValidHttpMethod in a way that makes this type-safe
 			// @ts-expect-error -- doesn't know that expressMethodName isn't just any string
-			router[ expressMethodName ](`/${route}`, toExpressHandler(handler));
+			router[ expressMethodName ](`/${route}`, expressHandler);
 			logger.trace(`Initialised route: ${name} ${route}`);
 		}
 	}, { readdir });
