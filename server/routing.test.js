@@ -75,6 +75,9 @@ describe("server/routing.js", function fileSuite( ) {
 					{ name: "javascript.js", isDirectory: ( ) => false },
 					// @ts-expect-error -- this is just a stub implementation
 					{ name: "not-js.dll", isDirectory: ( ) => false },
+					// test files should not be imported
+					// @ts-expect-error -- this is just a stub implementation
+					{ name: "a-test-file.test.js", isDirectory: ( ) => false },
 				]),
 				importer: importer,
 			});

@@ -142,6 +142,9 @@ export async function createFileBasedRouter(directory, {
 		const isJavascript = extname(filepath) === ".js";
 		if (!isJavascript) return;
 
+		const isTestFile = filepath.endsWith(".test.js");
+		if (isTestFile) return;
+
 		const route = relative(directory, filepath)
 			// turn square brackets into route parameters
 			.replace(/\[(\w+)]/g, (_, param) => `:${param}`)

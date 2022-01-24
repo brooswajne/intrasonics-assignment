@@ -1,5 +1,8 @@
 module.exports = {
 	spec: "**/*.test.js",
-	ignore: [ "node_modules/**/*", "tests/**/*" ],
+	ignore: [
+		"**/*.api.test.js",
+		"node_modules/**/*",
+	],
 	require: "tests/unit/setup.js",
 };

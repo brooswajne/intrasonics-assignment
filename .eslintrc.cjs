@@ -5,9 +5,22 @@ module.exports = {
 
 	overrides: [ {
 		files: [ "routes/**/*" ],
-		// allow square-brackets in route files (for route params), and enforce
-		// that all files are js
-		rules: { "filename-rules/match": [ "error", /^[[\]a-z]+\.js$/ ] },
+		rules: {
+			// allow http method handlers to have capital letters
+			"new-cap": [ "error", { "capIsNewExceptions": [
+				"DELETE",
+				"GET",
+				"PATCH",
+				"POST",
+				"PUT",
+			] } ],
+			// allow square-brackets in route files (for route params), and enforce
+			// that all files are one of:
+			// - *.js: actual api endpoints
+			// - *.unit.test.js: unit tests for the corresponding api endpoint
+			// - *.api.test.js: end-to-end api tests for the corresponding endpoint
+			"filename-rules/match": [ "error", /^[[\]a-z]+(?:\.(?:unit|api)\.test)?\.js$/ ],
+		},
 	}, {
 		files: [ "**/*.test.js" ],
 		extends: [ "@brooswajne/eslint-config/overrides/mocha" ],
