@@ -1,7 +1,13 @@
 import { expect } from "chai";
 import { fake } from "sinon";
 
-import { createFileBasedRouter } from "./routing.js";
+import {
+	createFileBasedRouter,
+	toExpressHandler,
+} from "./routing.js";
+import { HttpError } from "./errors.js";
+
+const tick = ( ) => new Promise((resolve) => process.nextTick(resolve));
 
 describe("server/routing.js", function fileSuite( ) {
 
@@ -93,6 +99,7 @@ describe("server/routing.js", function fileSuite( ) {
 				post: fake( ),
 				put: fake( ),
 			};
+			const toHandler = fake((handler) => handler);
 
 			await createFileBasedRouter("root", {
 				// @ts-expect-error -- this is just a stub implementation
@@ -100,9 +107,16 @@ describe("server/routing.js", function fileSuite( ) {
 				importer: importer,
 				// @ts-expect-error -- this is just a stub implementation
 				router: router,
+				toHandler: toHandler,
 			});
 
 			expect(importer).to.have.been.calledOnceWithExactly("root/file.js");
+			expect(toHandler).to.have.callCount(5)
+				.and.to.have.been.calledWith(handlers.DELETE)
+				.and.to.have.been.calledWith(handlers.GET)
+				.and.to.have.been.calledWith(handlers.PATCH)
+				.and.to.have.been.calledWith(handlers.POST)
+				.and.to.have.been.calledWith(handlers.PUT);
 			expect(router.delete).to.have.been.calledOnceWithExactly("/file", handlers.DELETE);
 			expect(router.get).to.have.been.calledOnceWithExactly("/file", handlers.GET);
 			expect(router.patch).to.have.been.calledOnceWithExactly("/file", handlers.PATCH);
@@ -125,6 +139,126 @@ describe("server/routing.js", function fileSuite( ) {
 			});
 
 			expect(router.get).to.have.been.calledOnceWith("/file/with/:param");
+		});
+
+	});
+
+	describe("toExpressHandler()", function functionSuite( ) {
+
+		it("should pass the request and some context to the handler", async function test( ) {
+			const handler = fake( );
+			const expressHandler = toExpressHandler(handler, { source: "test" });
+
+			const callTime = Date.now( );
+			const req = { };
+			// @ts-expect-error -- arguments are just stubs
+			expressHandler(req, {
+				on: fake( ),
+				send: fake( ),
+			}, fake( ));
+			await tick( );
+
+			expect(handler).to.have.callCount(1);
+			const [ request, context ] = handler.getCall(0).args;
+			expect(request).to.equal(req);
+			expect(context).to.have.keys("logger", "timestamp");
+			expect(context).to.have.property("logger")
+				.which.has.property("prefix")
+				.which.matches(/request:\w+/);
+			expect(context).to.have.property("timestamp")
+				.which.is.greaterThanOrEqual(callTime);
+		});
+
+		it("should respond with the data returned by the handler", async function test( ) {
+			const response = { json: "data" };
+			const handlerSync = fake.returns(response);
+			const handlerAsync = fake.resolves(response);
+
+			const res = {
+				on: fake( ),
+				send: fake( ),
+			};
+
+			// @ts-expect-error -- arguments are just stubs
+			toExpressHandler(handlerSync, { source: "test" })({ }, res, fake( ));
+			await tick( );
+
+			expect(handlerSync).to.have.callCount(1);
+			await tick( );
+
+			expect(res.send, "sync response should be sent")
+				.to.have.been.calledOnceWithExactly(response);
+
+			res.send.resetHistory( );
+			expect(res.send).to.have.callCount(0);
+
+			// @ts-expect-error -- arguments are just stubs
+			toExpressHandler(handlerAsync, { source: "test" })({ }, res, fake( ));
+			await tick( );
+
+			expect(handlerAsync).to.have.callCount(1);
+			expect(res.send, "async response should be sent")
+				.to.have.been.calledOnceWithExactly(response);
+		});
+
+		it("should catch any errors thrown by the handler", async function test( ) {
+			const error = new Error("oh no AAAAAA");
+			const handlerSync = fake.throws(error);
+			const handlerAsync = fake.rejects(error);
+
+			const next = fake( );
+
+			// @ts-expect-error -- arguments are just stubs
+			toExpressHandler(handlerSync, { source: "test" })({ }, {
+				on: fake( ),
+				send: fake( ),
+			}, next);
+			// note: if we got here, then the express handler successfully didn't
+			//       re-throw the sync error
+
+			await tick( ); // handler gets called
+			await tick( ); // error gets caught
+
+			expect(next, "sync errors should be forwarded to next()")
+				.to.have.been.calledOnceWithExactly(error);
+
+			next.resetHistory( );
+			expect(next).to.have.callCount(0);
+
+			// @ts-expect-error -- arguments are just stubs
+			toExpressHandler(handlerAsync, { source: "test" })({ }, {
+				on: fake( ),
+				send: fake( ),
+			}, next);
+			await tick( );
+
+			expect(next, "async rejections should be forwarded to next()")
+				.to.have.been.calledOnceWithExactly(error);
+		});
+
+		it("should handle thrown HttpError instances", async function test( ) {
+			const error = new HttpError(314, "Too much pie", {
+				code: "2_MUCH_PI",
+				message: "Sorry user, we ate it all",
+			});
+			const handler = fake.rejects(error);
+
+			/** @typedef {import("sinon").SinonSpy} SinonSpy */
+			/** @type {{ on: SinonSpy, send: SinonSpy, status: SinonSpy }} */
+			const res = {
+				on: fake( ),
+				send: fake( ),
+				status: fake(( ) => res),
+			};
+
+			// @ts-expect-error -- arguments are just stubs
+			toExpressHandler(handler, { source: "test" })({ }, res, fake( ));
+
+			await tick( ); // handler gets called
+			await tick( ); // error gets caught
+
+			expect(res.status).to.have.been.calledOnceWithExactly(314);
+			expect(res.send).to.have.been.calledOnceWithExactly(error.response);
 		});
 
 	});

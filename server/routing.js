@@ -62,7 +62,7 @@ async function traverse(directory, visit, {
  * tracing and debugging issues.
  * @returns {import("express").RequestHandler}
  */
-const toExpressHandler = (handler, { source }) => function expressHandler(req, res, next) {
+export const toExpressHandler = (handler, { source }) => function expressHandler(req, res, next) {
 	const logger = getRequestLogger( );
 	const timestamp = Date.now( );
 
@@ -77,7 +77,7 @@ const toExpressHandler = (handler, { source }) => function expressHandler(req, r
 
 	// wrap the request handler call in Promise#then() to automatically catch
 	// any possible synchronous errors
-	return Promise.resolve( ).then(function invokeRequestHandler( ) {
+	Promise.resolve( ).then(function invokeRequestHandler( ) {
 		logger.trace(`Using handler ${source}`);
 		return handler(req, { logger, timestamp });
 	}).then(function handleResponse(response) {
@@ -123,6 +123,10 @@ const toExpressHandler = (handler, { source }) => function expressHandler(req, r
  * @param {import("fs/promises").readdir} [options.readdir]
  * A custom implementation of `fs.readdir`.
  * Useful for providing stubs in a testing context.
+ * @param {typeof toExpressHandler} [options.toHandler]
+ * A function turning a promise-based request handler into an express.js request
+ * handler.
+ * Useful for providing stubs in a testing context.
  *
  * @returns {Promise<import("express").Router>}
  */
@@ -130,6 +134,7 @@ export async function createFileBasedRouter(directory, {
 	importer = (file) => import(file),
 	readdir = fsReaddir,
 	router = createRouter( ),
+	toHandler = toExpressHandler,
 } = { }) {
 	logger.debug(`Creating a file-based router using root: ${directory}`);
 
@@ -153,9 +158,8 @@ export async function createFileBasedRouter(directory, {
 			const isValidHandler = typeof value === "function";
 			if (!isValidHandler) continue;
 
-			const expressHandler = toExpressHandler(value, {
-				source: `${filepath}:${name}()`,
-			});
+			const source = `${filepath}:${name}()`;
+			const expressHandler = toHandler(value, { source });
 			const expressMethodName = name.toLowerCase( );
 			// TODO: abstract isValidHttpMethod in a way that makes this type-safe
 			// @ts-expect-error -- doesn't know that expressMethodName isn't just any string
