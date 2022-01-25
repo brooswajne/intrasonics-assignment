@@ -14,5 +14,10 @@ const DIR_ROOT = join(DIR_HERE, "../");
 
 /** @type {number} The port which the server should listen on. */
 export const PORT = Number(process.env.IA_PORT) || DEFAULT_PORT;
+
 /** @type {string} The directory containing all routes. */
 export const DIR_ROUTES = process.env.IA_ROUTES || join(DIR_ROOT, "routes");
+
+/** @type {string} The database of action mappings. */
+export const DB_ACTION_MAPPINGS = process.env.IA_DB_ACTION_MAPPINGS
+	|| join(DIR_ROOT, "actions.json");
