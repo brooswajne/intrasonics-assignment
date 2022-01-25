@@ -1,45 +1,32 @@
-import { NotFoundError } from "../../server/errors.js";
-
-/**
- * Parses a user-provided codeword into its numeric codeword value, or throws
- * an error if it is invalid.
- *
- * Note that this makes some assumptions about what a codeword should look like:
- * The assignment brief doesn't actually say that codewords must be a positive
- * integer, but the example makes it look that way.
- * Obviously in a proper implementation we'd need to take the time to clarify
- * the spec before implementing this.
- *
- * @param {string} string
- * The raw codeword to be parsed.
- * @returns {Promise<number>}
- */
-export async function parseCodeword(string) {
-	if (!string) throw new Error("No codeword provided");
-
-	const codeword = Number(string);
-	if (!Number.isInteger(codeword)) throw new Error("Codeword is not an integer");
-	if (codeword <= 0) throw new Error("Codeword is not positive");
-
-	return codeword;
-}
+import {
+	BadRequestError,
+	NotFoundError,
+} from "../../server/errors.js";
+import {
+	getActionMapping,
+	isValidCodeword,
+} from "../../server/models/action-mapping.js";
 
 /**
  * @type {import("../../server/routing").RequestHandler}
  * Gets a single action by its codeword (provided as a route parameter).
+ * @returns {Promise<import("../../server/models/action-mapping").ActionMapping | null>}
  */
 export async function GET(request, { logger }, {
-	// dependencies to inject for testing purposes
-	getParsedCodeword = parseCodeword,
+	// for dependency injection (in tests):
+	validateCodeword = isValidCodeword,
+	getActionMappingWithCodeword = getActionMapping,
 } = { }) {
-	const raw = request.params.codeword;
-	const codeword = await getParsedCodeword(raw).catch(function handleInvalidCodeword(err) {
-		logger.debug(`Unable to parse codeword ${raw}:`, err);
-		throw new NotFoundError("Invalid codeword");
-	});
+	const codeword = Number(request.params.codeword);
+	if (!validateCodeword(codeword)) throw new BadRequestError("Invalid codeword");
 
-	return [ {
-		codeword: codeword,
-		id: "thanks!",
-	} ];
+	// TODO: decide if we want caching here?
+	//       once a match is found it is unlikely to change, but how much data
+	//       do we want to keep in memory
+
+	logger.trace(`Looking for an ActionMapping with codeword ${codeword}`);
+	const mapping = await getActionMappingWithCodeword(codeword);
+	if (!mapping) throw new NotFoundError(`No ActionMapping found with codeword ${codeword}`);
+
+	return mapping;
 }

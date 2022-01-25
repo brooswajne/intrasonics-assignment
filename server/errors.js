@@ -6,6 +6,7 @@
 
 import { logger } from "./logger.js";
 
+const STATUS_CODE_BAD_REQUEST = 400;
 const STATUS_CODE_NOT_FOUND = 404;
 const STATUS_CODE_INTERNAL = 500;
 
@@ -39,6 +40,20 @@ export class HttpError extends Error {
 		/** The error message which will be shown to the user. */
 		this.response = code ? `${code}: ${userMessage}` : userMessage;
 		this.name = "HttpError";
+	}
+}
+
+export class BadRequestError extends HttpError {
+	/**
+	 * @param {string} [message]
+	 * @param {HttpErrorOptions} [options]
+	 */
+	constructor(message = "Bad Request", options = { }) {
+		super(STATUS_CODE_BAD_REQUEST, message, {
+			message: "Bad Request",
+			...options,
+		});
+		this.name = "BadRequestError";
 	}
 }
 
