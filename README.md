@@ -2,6 +2,50 @@
 
 An Intrasonics interview assignment by Willem Garnier.
 
+## Usage
+
+The application entry point is [`server.js`](./server.js), which can simply be
+run using a recent version of `node` (developed using node 16):
+
+```console
+$ node server.js
+13:00:43 INF Starting application...
+```
+
+Alternatively, an `npm run start` script is available.
+
+The application's behaviour can be configured using environment variables. These
+are defined in [`server/config.js`](./server/config.js).  \
+Note that for a proper production-ready application we might want to move this
+configuration to a dedicated configuration file, this is just a temporary and
+easy mechanism for the purpose of this assignment.
+
+Once the server is started, the API can be used by making HTTP requests to
+whatever port you have configured (3000 by default):
+
+```console
+$ curl http://localhost:3000/actions -v
+*   Trying ::1...
+* TCP_NODELAY set
+* Connected to localhost (::1) port 3000 (#0)
+> GET /actions HTTP/1.1
+> Host: localhost:3000
+> User-Agent: curl/7.64.1
+> Accept: */*
+>
+< HTTP/1.1 200 OK
+< X-Powered-By: Express
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 145
+< ETag: W/"91-YNCmsTTsMaDswMvKCtL/9gckanY"
+< Date: Wed, 26 Jan 2022 13:11:20 GMT
+< Connection: keep-alive
+< Keep-Alive: timeout=5
+<
+* Connection #0 to host localhost left intact
+[{"codeword":31415,"actionId":"hay"},{"codeword":27182,"actionId":"hay"},{"codeword":42,"actionId":"needle"},{"codeword":16180,"actionId":"hay"}]
+```
+
 ## Architecture Notes
 
 ### Data Model
