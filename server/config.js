@@ -7,6 +7,8 @@ import {
 	join,
 } from "path";
 
+import { LoggerLevel } from "@brooswajne/terrier";
+
 const DEFAULT_PORT = 3000;
 
 const DIR_HERE = dirname(import.meta.url.slice("file://".length));
@@ -19,6 +21,10 @@ export const PORT = Number(process.env.IA_PORT)
 /** @type {string} The directory containing all routes. */
 export const DIR_ROUTES = process.env.IA_ROUTES
 	|| join(DIR_ROOT, "routes");
+
+/** @type {LoggerLevel} The level of logging to be used. */
+export const LOGGER_LEVEL = Number(process.env.IA_LOGGER_LEVEL)
+	|| LoggerLevel.Info;
 
 /** @type {string} The database to read data from (path to json file). */
 export const DB_NAME = process.env.IA_DB_NAME

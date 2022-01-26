@@ -8,6 +8,7 @@ import {
 	createLogger,
 } from "@brooswajne/terrier";
 
+import { LOGGER_LEVEL } from "./config.js";
 import { generateRandomString } from "./random.js";
 
 /** @typedef {import("@brooswajne/terrier").Logger} Logger */
@@ -27,7 +28,7 @@ export const COMPONENT_COLOURS = Object.freeze([
 ]);
 
 /** The root application logger instance. */
-export const logger = createLogger(/* TODO: options from config.js */);
+export const logger = createLogger({ level: LOGGER_LEVEL });
 
 let numComponents = 0;
 
