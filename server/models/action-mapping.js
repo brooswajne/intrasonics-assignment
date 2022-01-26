@@ -1,4 +1,7 @@
-import { DB_ACTION_MAPPINGS } from "../config.js";
+import {
+	DB_NAME,
+	DB_TABLE_ACTION_MAPPINGS,
+} from "../config.js";
 import { getDatabaseEntriesIterator } from "../database.js";
 
 /**
@@ -56,19 +59,22 @@ export const isValidActionMapping = (mapping) => mapping != null
  * in the given database.
  * @param {object} [options]
  * @param {string} [options.database]
- * The path to the action mapping database to be read.
- * @param {(database: string) => AsyncGenerator<unknown>} [options.readDatabase]
+ * The path to the database to read from.
+ * @param {string} [options.table]
+ * The database table containing all action mappings.
+ * @param {(database: string, table: string) => AsyncGenerator<unknown>} [options.readDatabase]
  * An implementation of the mechanism for iterating over all _raw_ database
  * entries (ie. without validation of their type).
  * Useful for providing stubs in a testing context.
  * @returns {AsyncGenerator<ActionMapping>}
  */
 export async function* getActionMappingsIterator({
-	database = DB_ACTION_MAPPINGS,
+	database = DB_NAME,
+	table = DB_TABLE_ACTION_MAPPINGS,
 	readDatabase = getDatabaseEntriesIterator,
 } = { }) {
 	let index = 0;
-	for await (const entry of readDatabase(database)) {
+	for await (const entry of readDatabase(database, table)) {
 		if (!isValidActionMapping(entry)) {
 			const identifier = `entry #${index}`;
 			const context = `database: ${database}`;

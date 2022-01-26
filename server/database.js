@@ -18,22 +18,46 @@
 import { readFile } from "fs/promises";
 
 /**
- * "Connects" to the database (json file) at the given path, reading its
- * contents and returning an async iterator which can be used to iterate
- * over all of its entries.
+ * "Connects" to the database (json file) at the given path, reading the
+ * contents of the given "table" and returning an async iterator which can
+ * be used to iterate over all of these entries.
+ *
+ * The "database" should have the following json format:
+ * ```js
+ * {
+ *   "table1": [
+ *     // ... table1's entries (any format)
+ *   ],
+ *   "table2": [
+ *     // ... table2's entries (any format)
+ *   ],
+ *   // ... any other tables
+ * }
+ * ```
+ *
  * @param {string} database
+ * @param {string} table
+ * The database "table" to be read from.
+ *
  * @param {object} [options]
  * @param {typeof import("fs/promises").readFile} [options.read]
  * A custom implementation of the function used to read the database contents
  * into memory.
  * Useful for providing stubs in a testing context.
+ *
  * @returns {AsyncGenerator<unknown>}
  */
-export async function* getDatabaseEntriesIterator(database, {
+export async function* getDatabaseEntriesIterator(database, table, {
 	read = readFile,
 } = { }) {
 	const contents = await read(database, { encoding: "utf-8" });
-	const entries = /** @type {unknown} */ (JSON.parse(contents));
-	if (!Array.isArray(entries)) throw new Error(`Database (${database}) not an array`);
+	const tables = JSON.parse(contents);
+
+	const isValidDatabase = tables != null && typeof tables === "object";
+	if (!isValidDatabase) throw new Error(`Invalid database: ${database}`);
+
+	const entries = tables[ table ];
+	if (!Array.isArray(entries)) throw new Error(`Invalid database table: ${database}:${table}`);
+
 	yield* entries;
 }

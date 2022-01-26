@@ -7,13 +7,18 @@ describe("server/database.js", function fileSuite( ) {
 
 	describe("getDatabaseEntriesIterator()", function functionSuite( ) {
 
-		it("should yield all entries in the given database", async function test( ) {
-			const read = fake.resolves(`[
-				{ "entry": "one" },
-				{ "entry": "two" }
-			]`);
+		it("should yield all entries in the given database and table", async function test( ) {
+			const read = fake.resolves(`{
+				"table": [
+					{ "entry": "one" },
+					{ "entry": "two" }
+				],
+				"other": [
+					{ "entry": "three" }
+				]
+			}`);
 
-			const iterator = getDatabaseEntriesIterator("my-database.json", { read });
+			const iterator = getDatabaseEntriesIterator("my-database.json", "table", { read });
 			expect(iterator).to.have.property(Symbol.asyncIterator);
 
 			const entries = [ ];
@@ -26,14 +31,34 @@ describe("server/database.js", function fileSuite( ) {
 			expect(read).to.have.been.calledOnceWith("my-database.json");
 		});
 
-		it("should validate that the database is in the expected format", async function test( ) {
-			const read = fake.resolves("{ \"not an array\": true }");
+		it("should throw an error if the database is invalid", async function test( ) {
+			const read = fake.resolves("[ \"not valid\" ]");
 
 			await expect((async function iterate( ) {
-				const iterator = getDatabaseEntriesIterator("my-database.json", { read });
+				const iterator = getDatabaseEntriesIterator("my-database.json", "table", { read });
 				// eslint-disable-next-line no-unused-vars -- just need to get the iterator going
 				for await (const _ of iterator) expect.fail("Something was yielded");
-			})( )).to.be.rejectedWith(Error, /not an array/i);
+			})( )).to.be.rejectedWith(Error, /invalid database/i);
+		});
+
+		it("should throw an error if the table doesn't exist", async function test( ) {
+			const read = fake.resolves("{ \"table\": [ ] }");
+
+			await expect((async function iterate( ) {
+				const iterator = getDatabaseEntriesIterator("my-database.json", "nope", { read });
+				// eslint-disable-next-line no-unused-vars -- just need to get the iterator going
+				for await (const _ of iterator) expect.fail("Something was yielded");
+			})( )).to.be.rejectedWith(Error, /invalid database table/i);
+		});
+
+		it("should throw an error if the table is invalid", async function test( ) {
+			const read = fake.resolves("{ \"table\": { \"not\": \"an array\" } }");
+
+			await expect((async function iterate( ) {
+				const iterator = getDatabaseEntriesIterator("my-database.json", "table", { read });
+				// eslint-disable-next-line no-unused-vars -- just need to get the iterator going
+				for await (const _ of iterator) expect.fail("Something was yielded");
+			})( )).to.be.rejectedWith(Error, /invalid database table/i);
 		});
 
 	});

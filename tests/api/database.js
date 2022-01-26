@@ -6,15 +6,20 @@
 
 import { writeFile } from "fs/promises";
 
-import { DB_ACTION_MAPPINGS } from "../../server/config.js";
+import {
+	DB_NAME,
+	DB_TABLE_ACTION_MAPPINGS,
+} from "../../server/config.js";
 
 /** @typedef {import("../../server/models/action-mapping").ActionMapping} ActionMapping */
 
 export async function clearDatabase( ) {
-	await writeFile(DB_ACTION_MAPPINGS, "[]");
+	await writeFile(DB_NAME, `{ "${DB_TABLE_ACTION_MAPPINGS}": [] }`);
 }
 
 /** @param {ActionMapping[]} data */
 export async function seedDatabase(data) {
-	await writeFile(DB_ACTION_MAPPINGS, JSON.stringify(data));
+	await writeFile(DB_NAME, JSON.stringify({
+		[ DB_TABLE_ACTION_MAPPINGS ]: data,
+	}, null, 2));
 }
