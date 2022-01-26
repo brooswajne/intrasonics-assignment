@@ -5,7 +5,7 @@ An Intrasonics interview assignment by Willem Garnier.
 ## Usage
 
 The application entry point is [`server.js`](./server.js), which can simply be
-run using a recent version of `node` (developed using node 16):
+run using `node` (version 16.x is required):
 
 ```console
 $ node server.js
