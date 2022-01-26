@@ -4,6 +4,15 @@ An Intrasonics interview assignment by Willem Garnier.
 
 ## Architecture Notes
 
+### Data Model
+
+To slightly clarify the meaning of the data stored in `actions.json` in my mind,
+I chose to call that "database"'s entries `ActionMapping`s, and to rename the
+`id` field to `actionId`.  \
+Not great naming, but it slightly clarifies that the entries are not actions
+themselves, but rather that they represent a mapping of codewords to the actions
+they should trigger (identified by the action's id).
+
 ### Language
 
 I chose to build this application in JavaScript just due to being most familiar
