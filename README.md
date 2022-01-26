@@ -46,6 +46,18 @@ $ curl http://localhost:3000/actions -v
 [{"codeword":31415,"actionId":"hay"},{"codeword":27182,"actionId":"hay"},{"codeword":42,"actionId":"needle"},{"codeword":16180,"actionId":"hay"}]
 ```
 
+## Developing
+
+An `npm run watch` script is available which will start the application and
+automatically restart it whenever you update any code.
+
+Ensure code passes both linting and type-checks by using the `npm run lint` and
+`npm run check` scripts respectively.
+
+The full test suite can be run at any time using `npm run test`, and it is also
+broken down by test type with scripts `npm run test:unit` and `npm run
+test:api`.
+
 ## Architecture Notes
 
 ### Data Model
