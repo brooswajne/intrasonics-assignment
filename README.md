@@ -56,7 +56,11 @@ Ensure code passes both linting and type-checks by using the `npm run lint` and
 
 The full test suite can be run at any time using `npm run test`, and it is also
 broken down by test type with scripts `npm run test:unit` and `npm run
-test:api`.
+test:api`.  \
+**IMPORTANT**: the API tests will clear and write data to whichever database if
+configured when they are run. You should specify a different database (using the
+`IA_DB_NAME` environment variable) if you want to avoid overwriting existing
+data.
 
 ## Architecture Notes
 
